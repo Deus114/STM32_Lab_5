@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
 #include "timer.h"
 /* USER CODE END Includes */
 
@@ -64,17 +65,17 @@ void uart_communication_fsm(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint8_t command_ok[] = "!OK#";
+uint8_t command_rst[] = "!RST#";
+uint8_t command_adc[] = "!ADC=";
+uint8_t newline[]= "\r\n";
+
 #define MAX_BUFFER_SIZE  30
 uint32_t ADC_value = 0;
 uint8_t temp = 0;
 uint8_t buffer[MAX_BUFFER_SIZE];
 uint8_t index_buffer = 0;
 uint8_t buffer_flag = 0;
-
-uint8_t command_ok[] = "!OK#";
-uint8_t command_rst[] = "!RST#";
-uint8_t command_adc[] = "!ADC=";
-uint8_t newline[]= "\r\n";
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	if(huart->Instance == USART2){
@@ -335,14 +336,7 @@ enum CommunicationState cState = INIT;
 
 void command_parser_fsm(void) {
 	switch(pState) {
-	case AWAIT:
-		if(temp == '!') {
-			index_buffer = 0;
-			buffer[index_buffer++] = temp;
-			pState = PARSE;
-		}
-		break;
-	case VALIDATE:
+  case VALIDATE:
 		buffer[index_buffer] = '\0';
 		if(strcmp(buffer, command_ok) == 0) {
 			HAL_UART_Transmit(&huart2, newline, sizeof(newline), 1000);
@@ -353,6 +347,15 @@ void command_parser_fsm(void) {
 		}
 		pState = AWAIT;
 		break;
+
+	case AWAIT:
+		if(temp == '!') {
+			index_buffer = 0;
+			buffer[index_buffer++] = temp;
+			pState = PARSE;
+		}
+		break;
+	
 	case PARSE:
 		buffer[index_buffer++] = temp;
 		if(index_buffer >= MAX_BUFFER_SIZE) {
